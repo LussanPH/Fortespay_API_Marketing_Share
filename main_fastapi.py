@@ -9,19 +9,8 @@ from contextlib import asynccontextmanager
 from pyngrok import ngrok
 from dotenv import load_dotenv
 
-load_dotenv()
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    ngrok.set_auth_token(os.environ["NGROK_AUTHTOKEN"])
-    tunel = ngrok.connect("8000")
-    print("URL pública: ", tunel.public_url)
-    yield
-    if tunel.public_url:
-        ngrok.disconnect(tunel.public_url)
-
-
-app = FastAPI(lifespan=lifespan)
+app = FastAPI()
 
 XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
