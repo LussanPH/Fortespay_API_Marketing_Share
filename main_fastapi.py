@@ -1,6 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import StreamingResponse
-from functions import limpar_detalhamento_empresas, extrair_df_dados, update_somaoffice, update_somaoffice_tempo
+from functions import limpar_detalhamento_empresas, extrair_df_dados, update_somaoffice, update_somaoffice_tempo, update_somaoffice_tempo_totais
 import pandas as pd
 import numpy as np
 import os
@@ -54,7 +54,9 @@ async def somaoffice_update(detalhamento_empresas_somaoffice : UploadFile = File
     
 @app.post('/somaoffice_tempo')
 async def somaoffice_tempo(somaoffice_tempo : UploadFile = File(...),
-                           detalhamento_empresas : UploadFile =File(...)):
+                           detalhamento_empresas : UploadFile =File(...),
+                           somaoffice_totais : UploadFile = File(...),
+                           tempo_totais : UploadFile = File(...)):
 
     try:
         df_somaoffice = pd.read_excel(detalhamento_empresas.file, dtype={'cnpj':str})
@@ -64,6 +66,8 @@ async def somaoffice_tempo(somaoffice_tempo : UploadFile = File(...),
         
         
         df_somaoffice_tempo_grupos, df_somaoffice_tempo_empresas, df_somaoffice_tempo = update_somaoffice_tempo(df_somaoffice_limpo, df_somaoffice_tempo)
+
+        df_tempo_totais = update_somaoffice_tempo_totais(somaoffice_totais, tempo_totais)
         
         buffer = io.BytesIO()
         
@@ -73,6 +77,8 @@ async def somaoffice_tempo(somaoffice_tempo : UploadFile = File(...),
             df_somaoffice_tempo_empresas.to_excel(writer, sheet_name='Somaoffice_Tempo_Empresas', index=False)
             
             df_somaoffice_tempo_grupos.to_excel(writer, sheet_name='Somaoffice_Tempo_Grupos', index=False)
+
+            df_tempo_totais.to_excel(writer, sheet_name="Somaoffice_Tempo_Totais", index=False)
             
         buffer.seek(0)
         
