@@ -302,16 +302,39 @@ def update_somaoffice_tempo(somaoffice_limpo : pd.DataFrame, somaoffice_tempo : 
         raise e
     
     
-'''def update_somaoffice_tempo_totais(df_detalhamento_empresas : pd.DataFrame, df_somaoffice_totais : pd.DataFrame):
-    total = df_detalhamento_empresas.iloc[-3, :]
-    
-    today = date.today()
-    
-    data_oficial = date(year=today.year, month=today.month, day=1)
-    
-    data_oficial = np.datetime64(data_oficial)
+def update_somaoffice_tempo_totais(df_somaoffice_totais : pd.DataFrame, df_tempo_totais : pd.DataFrame):
+    try:
+        df_somaoffice_totais = df_somaoffice_totais.iloc[:-3, :]
 
-    if (df_somaoffice_totais['Data'] == data_oficial).any():
-        df_somaoffice_totais = df_somaoffice_totais.loc[~(df_somaoffice_totais['Data'] == data_oficial)]'''
+        today = date.today()
+
+        ano = today.year
+
+        dia_um = datetime(year=ano, month=1, day=1)
+
+        meses = {"janeiro":1, "fevereiro":2, "março":3, "abril":4, "maio":5, "junho":6,
+                "julho":7, "agosto":8, "setembro":9, "outubro":10, "novembro":11, "dezembro":12}
+
+        meses_num = df_somaoffice_totais['Date - Mês'].str.strip().str.lower().map(meses)
+
+        df_somaoffice_totais['Data'] = pd.to_datetime(
+            pd.DataFrame({"year":ano, "month":meses_num, "day":1})
+        )
         
+        df_somaoffice_totais['Data'] = df_somaoffice_totais['Data'].dt.date
+
+        df_somaoffice_totais = df_somaoffice_totais.drop(columns=['Date - Mês'])
+
+        ano_existe = (df_tempo_totais["Data"].dt.year == ano).any()
+
+        if ano_existe:
+            df_tempo_totais = df_tempo_totais.loc[df_tempo_totais['Data'] < dia_um]
+
+        df_tempo_totais = pd.concat([df_tempo_totais, df_somaoffice_totais])
+
+        return df_tempo_totais
+
+    except Exception as e:
+        raise e
+            
     
