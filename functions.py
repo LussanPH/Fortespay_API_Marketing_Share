@@ -304,7 +304,7 @@ def update_somaoffice_tempo(somaoffice_limpo : pd.DataFrame, somaoffice_tempo : 
     
 def update_somaoffice_tempo_totais(df_somaoffice_totais : pd.DataFrame, df_tempo_totais : pd.DataFrame):
     try:
-        df_somaoffice_totais = df_somaoffice_totais.iloc[:-3, 1:]
+        df_somaoffice_totais = df_somaoffice_totais.iloc[:-3, :]
 
         today = date.today()
 
@@ -320,6 +320,8 @@ def update_somaoffice_tempo_totais(df_somaoffice_totais : pd.DataFrame, df_tempo
         df_somaoffice_totais['Data'] = pd.to_datetime(
             pd.DataFrame({"year":ano, "month":meses_num, "day":1})
         )
+        
+        df_somaoffice_totais['Data'] = df_somaoffice_totais['Data'].dt.date
 
         df_somaoffice_totais = df_somaoffice_totais.drop(columns=['Date - Mês'])
 
