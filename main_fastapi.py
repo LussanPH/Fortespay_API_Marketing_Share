@@ -1,6 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import StreamingResponse
-from functions import limpar_detalhamento_empresas, extrair_df_dados, update_somaoffice, update_somaoffice_tempo, update_somaoffice_tempo_totais
+from functions import limpar_detalhamento_empresas, extrair_df_dados, update_somaoffice, update_somaoffice_tempo, update_somaoffice_tempo_totais, DadosExluidos
 import pandas as pd
 import numpy as np
 import os
@@ -50,6 +50,24 @@ async def somaoffice_update(detalhamento_empresas_somaoffice : UploadFile = File
             headers={"Content-Disposition":'attachment; filename="dadosatulizacao.xlsx"'}
         )
 
+
+    except DadosExluidos as e:
+        buffer = io.BytesIO()
+
+        with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
+            e.df_excluidos.to_excel(writer, index=False, sheet_name="Dados_Excluidos")
+
+        buffer.seek(0)
+
+        return StreamingResponse(
+            buffer,
+            status_code=409,
+            media_type=XLSX,
+            headers={
+                "Content-Disposition": 'attachment; filename="dados_excluidos.xlsx"',
+                "X-Erro": "Dados foram excluidos. Verificar dados_excluidos.xlsx",
+            },
+        )
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao processar dados: {e}")
