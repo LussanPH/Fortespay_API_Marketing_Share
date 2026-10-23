@@ -1,5 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
 from functions import limpar_detalhamento_empresas, extrair_df_dados, update_somaoffice, update_somaoffice_tempo, update_somaoffice_tempo_totais, DadosExluidos
 import pandas as pd
 import numpy as np
@@ -14,6 +15,16 @@ logger = logging.getLogger(__name__)
 
 
 app = FastAPI()
+
+origins = os.getenv("CORS_ORIGINS", "http://localhost:5173")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins.split(","),
+    allow_methods=["GET", "POST"],
+    allow_headers=["*"],
+    expose_headers=["X-Erro", "Content-Disposition"],
+)
 
 XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
