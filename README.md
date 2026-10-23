@@ -109,12 +109,40 @@ uv run uvicorn main_fastapi:app --reload
 
 A API sobe em `http://localhost:8000`. A documentação interativa (Swagger), onde dá para enviar os arquivos pelo navegador, fica em `http://localhost:8000/docs`.
 
+## Frontend
+
+Em [frontend/](frontend/) há um site em React (Vite) para usar a API sem `curl`. Você solta todos os `.xlsx` de uma vez, o site identifica cada arquivo pelo nome (dá para corrigir o tipo num seletor) e envia para os endpoints que estiverem completos. O `Detalhamento_Empresas` é reaproveitado nos dois. Os resultados são baixados automaticamente; no caso do 409, o site avisa que os clientes foram excluídos e baixa o `dados_excluidos.xlsx`.
+
+**Rodar localmente** (em dois terminais):
+
+```bash
+# 1. API
+uv run uvicorn main_fastapi:app --reload
+
+# 2. Frontend (http://localhost:5173)
+cd frontend
+npm install
+npm run dev
+```
+
+Em desenvolvimento o Vite repassa as chamadas para a API em `localhost:8000`, então não precisa configurar nada.
+
+**Deploy (Vercel para o site, Render para a API):**
+
+| Onde   | Configuração                                                                                                   |
+| ------ | -------------------------------------------------------------------------------------------------------------- |
+| Vercel | Importar este repositório com **Root Directory** = `frontend`. Variável `VITE_API_URL` = endereço da API no Render (ex.: `https://sua-api.onrender.com`, sem barra no final). Mudou a URL da API? Faça um novo deploy. |
+| Render | Variável `CORS_ORIGINS` com o endereço do site, separando vários por vírgula e **sem espaços** (ex.: `https://seu-site.vercel.app,http://localhost:5173`). Opcional: em *Build Filters → Ignored Paths*, `frontend/**`, para mudanças só no site não reiniciarem a API. |
+
+Sem `CORS_ORIGINS`, a API só aceita chamadas de `http://localhost:5173`.
+
 ## Estrutura do projeto
 
 | Arquivo           | Conteúdo                                                                     |
 | ----------------- | ---------------------------------------------------------------------------- |
-| `main_fastapi.py` | Definição dos endpoints, leitura dos uploads e geração dos `.xlsx` de resposta |
+| `main_fastapi.py` | Definição dos endpoints, CORS, leitura dos uploads e geração dos `.xlsx` de resposta |
 | `functions.py`    | Regras de negócio: limpeza, cruzamento das bases, atualização e exceção `DadosExluidos` |
+| `frontend/`       | Site em React (Vite) para enviar as planilhas                                |
 | `pyproject.toml`  | Dependências e versão do Python                                              |
 | `uv.lock`         | Versões travadas das dependências                                            |
 | `LICENSE`         | Licença do projeto                                                           |
