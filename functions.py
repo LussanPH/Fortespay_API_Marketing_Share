@@ -4,12 +4,6 @@ from datetime import datetime, date, timedelta
 from dateutil.relativedelta import relativedelta
 
 
-class DadosExluidos(Exception):
-    def __init__(self, mensagem: str, df_excluidos: pd.DataFrame):
-        super().__init__(mensagem)
-        self.df_excluidos = df_excluidos
-
-
 def limpar_detalhamento_empresas(df_somaoffice_bruto : pd.DataFrame):
 
     df_somaoffice_bruto = df_somaoffice_bruto.iloc[:-3, :]
@@ -138,13 +132,7 @@ def extrair_df_dados(df_base_somapay : pd.DataFrame, df_base_ag : pd.DataFrame, 
 def update_somaoffice(df_somaoffice_atual : pd.DataFrame, df_somaoffice_passado : pd.DataFrame, df_unidades_municipios : pd.DataFrame):
     try:
 
-        df_verificacao_exclusao = pd.merge(df_somaoffice_passado, df_somaoffice_atual, how='left', on='CNPJ', indicator=True)
-
-        df_verificacao_exclusao = df_verificacao_exclusao[df_verificacao_exclusao['_merge'] == 'left_only']
-
-        if len(df_verificacao_exclusao) > 0:
-
-            raise DadosExluidos('Dados Foram Exluídos! Verificar dados_excluidos.xlsx', df_verificacao_exclusao)
+        df_excluidos = df_somaoffice_passado[~df_somaoffice_passado['CNPJ'].isin(df_somaoffice_atual['CNPJ'])]
 
         df_somaoffice_merge_inner = pd.merge(df_somaoffice_passado, df_somaoffice_atual, how='inner', on='CNPJ')
 
@@ -256,15 +244,13 @@ def update_somaoffice(df_somaoffice_atual : pd.DataFrame, df_somaoffice_passado 
             if pd.isna(nome_representante) and not pd.isna(unidade):
                 df_somaoffice_atualizado.loc[df_somaoffice_atualizado['CNPJ'] == cnpj, 'Nome Representante'] = unidade
 
-        df_somaoffice_atualizado = df_somaoffice_atualizado.drop(columns=['UNIDADE'])    
+        df_somaoffice_atualizado = df_somaoffice_atualizado.drop(columns=['UNIDADE'])
 
-        return df_somaoffice_atualizado
+        if len(df_excluidos) > 0:
+            df_somaoffice_atualizado = pd.concat([df_somaoffice_atualizado, df_excluidos.reindex(columns=df_somaoffice_atualizado.columns)], ignore_index=True)
 
-    except DadosExluidos as e:
-        print(f"Erro Detectado: {e}")
+        return df_somaoffice_atualizado, df_excluidos
 
-        raise
-    
     except Exception as e:
         
         raise e

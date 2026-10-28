@@ -32,8 +32,8 @@ Atualiza a planilha com todos os clientes da Fortespay. Junta cinco planilhas e 
 1. Limpa o detalhamento exportado do Somaoffice.
 2. Cruza Somaoffice, CRM e Fortes AG pelo CNPJ para montar a base atual.
 3. Compara a base atual com a `somaoffice_passado`.
-   - Se algum cliente da base passada **não aparece mais** na base atual, interrompe e devolve a lista deles (veja abaixo).
-   - Caso contrário, atualiza os campos dos clientes existentes (funil, grupo empresarial, nome da empresa, município, representante, UF, cliente Fortes) com os valores novos que não estejam vazios, e acrescenta os clientes novos.
+   - Atualiza os campos dos clientes existentes (funil, grupo empresarial, nome da empresa, município, representante, UF, cliente Fortes) com os valores novos que não estejam vazios, e acrescenta os clientes novos.
+   - Se algum cliente da base passada **não aparece mais** na base atual, ele é mantido na planilha com os dados que já tinha, sem alteração, e também listado na aba `Dados_Excluidos` (veja abaixo).
 4. Quando o representante está vazio, preenche com a unidade correspondente ao município/UF.
 
 **Respostas**
@@ -41,10 +41,10 @@ Atualiza a planilha com todos os clientes da Fortespay. Junta cinco planilhas e 
 | Status | Quando                                  | Corpo                                                                 |
 | ------ | --------------------------------------- | --------------------------------------------------------------------- |
 | 200    | Atualização concluída                   | `dadosatulizacao.xlsx`, aba `Somaoffice_passado`                      |
-| 409    | Clientes deixaram de ser rastreados     | `dados_excluidos.xlsx`, aba `Dados_Excluidos`, com os clientes removidos. A mensagem também vai no header `X-Erro` |
+| 409    | Clientes deixaram de ser rastreados     | `dadosatulizacao.xlsx` com duas abas: `Somaoffice_passado` (já atualizada, incluindo os excluídos) e `Dados_Excluidos` (só os clientes removidos). A mensagem também vai no header `X-Erro` |
 | 500    | Qualquer outro erro de processamento    | JSON com `detail`                                                     |
 
-> **Atenção:** o 409 devolve um arquivo, não um JSON. Quem chama a API precisa salvar o corpo da resposta mesmo com status de erro (por exemplo, não usar `raise_for_status()` antes de gravar o arquivo). Esse arquivo lista apenas os clientes excluídos: **não** o use como nova `Somaoffice_Passado`.
+> **Atenção:** o 409 devolve um arquivo, não um JSON. Quem chama a API precisa salvar o corpo da resposta mesmo com status de erro (por exemplo, não usar `raise_for_status()` antes de gravar o arquivo). Esse arquivo pode ser usado como nova `Somaoffice_Passado`, porque a aba `Somaoffice_passado` é a primeira. Como os excluídos continuam nela, eles voltam a ser apontados (e o status volta a ser 409) em toda execução até serem removidos manualmente.
 
 **Exemplo**
 
@@ -111,7 +111,7 @@ A API sobe em `http://localhost:8000`. A documentação interativa (Swagger), on
 
 ## Frontend
 
-Em [frontend/](frontend/) há um site em React (Vite) para usar a API sem `curl`. Você solta todos os `.xlsx` de uma vez, o site identifica cada arquivo pelo nome (dá para corrigir o tipo num seletor) e envia para os endpoints que estiverem completos. O `Detalhamento_Empresas` é reaproveitado nos dois. Os resultados são baixados automaticamente; no caso do 409, o site avisa que os clientes foram excluídos e baixa o `dados_excluidos.xlsx`.
+Em [frontend/](frontend/) há um site em React (Vite) para usar a API sem `curl`. Você solta todos os `.xlsx` de uma vez, o site identifica cada arquivo pelo nome (dá para corrigir o tipo num seletor) e envia para os endpoints que estiverem completos. O `Detalhamento_Empresas` é reaproveitado nos dois. Os resultados são baixados automaticamente; no caso do 409, o site avisa que os clientes foram excluídos e baixa o `dadosatulizacao.xlsx` com a aba `Dados_Excluidos`.
 
 **Rodar localmente** (em dois terminais):
 
@@ -141,7 +141,7 @@ Sem `CORS_ORIGINS`, a API só aceita chamadas de `http://localhost:5173`.
 | Arquivo           | Conteúdo                                                                     |
 | ----------------- | ---------------------------------------------------------------------------- |
 | `main_fastapi.py` | Definição dos endpoints, CORS, leitura dos uploads e geração dos `.xlsx` de resposta |
-| `functions.py`    | Regras de negócio: limpeza, cruzamento das bases, atualização e exceção `DadosExluidos` |
+| `functions.py`    | Regras de negócio: limpeza, cruzamento das bases, atualização e detecção dos clientes excluídos |
 | `frontend/`       | Site em React (Vite) para enviar as planilhas                                |
 | `pyproject.toml`  | Dependências e versão do Python                                              |
 | `uv.lock`         | Versões travadas das dependências                                            |

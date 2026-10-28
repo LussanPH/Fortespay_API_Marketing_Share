@@ -47,13 +47,13 @@ export async function enviar(path, formData) {
     }
   }
 
-  // 409: a API devolve a planilha dos clientes excluídos no corpo da resposta.
+  // 409: a API devolve a planilha atualizada, com uma aba extra listando os clientes excluídos.
   if (resposta.status === 409) {
     return {
       status: 'conflito',
       mensagem: resposta.headers.get('x-erro') || 'Clientes deixaram de ser rastreados.',
       blob: await resposta.blob(),
-      nomeArquivo: nomeDoArquivo(resposta, 'dados_excluidos.xlsx'),
+      nomeArquivo: nomeDoArquivo(resposta, 'dadosatulizacao.xlsx'),
     }
   }
 
