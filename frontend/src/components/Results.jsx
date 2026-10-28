@@ -18,8 +18,8 @@ export default function Results({ resultados }) {
 
           {r.status === 'conflito' && (
             <p className="resultado__msg">
-              {r.mensagem.replace(/[.\s]+$/, '')}. A planilha com os clientes removidos foi baixada. Ela lista só os
-              excluídos: <strong>não a use como Somaoffice_Passado</strong>.
+              {r.mensagem.replace(/[.\s]+$/, '')}. A planilha atualizada foi baixada. Os clientes excluídos foram
+              mantidos sem alteração e estão listados na aba <strong>Dados_Excluidos</strong>.
             </p>
           )}
           {r.status === 'erro' && <p className="resultado__msg">{r.mensagem}</p>}

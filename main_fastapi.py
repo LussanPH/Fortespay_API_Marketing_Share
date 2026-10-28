@@ -1,7 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
-from functions import limpar_detalhamento_empresas, extrair_df_dados, update_somaoffice, update_somaoffice_tempo, update_somaoffice_tempo_totais, DadosExluidos
+from functions import limpar_detalhamento_empresas, extrair_df_dados, update_somaoffice, update_somaoffice_tempo, update_somaoffice_tempo_totais
 import pandas as pd
 import numpy as np
 import os
@@ -46,39 +46,33 @@ async def somaoffice_update(detalhamento_empresas_somaoffice : UploadFile = File
 
         df_dados = extrair_df_dados(df_somaoffice, df_base_ag, df_base_crm)
 
-        df_somaoffice_passado = update_somaoffice(df_dados, df_somaoffice_passado, df_unidades_municipios)
+        df_somaoffice_passado, df_excluidos = update_somaoffice(df_dados, df_somaoffice_passado, df_unidades_municipios)
+
+        houve_exclusao = len(df_excluidos) > 0
 
         buffer = io.BytesIO()
 
+        # Somaoffice_passado precisa ser a primeira aba: é ela que o pd.read_excel lê na próxima execução.
         with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
             df_somaoffice_passado.to_excel(writer, index=False, sheet_name="Somaoffice_passado")
-            
-        buffer.seek(0)
 
-        return StreamingResponse(
-            buffer,
-            media_type=XLSX,
-            headers={"Content-Disposition":'attachment; filename="dadosatulizacao.xlsx"'}
-        )
-
-
-    except DadosExluidos as e:
-        buffer = io.BytesIO()
-
-        with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
-            e.df_excluidos.to_excel(writer, index=False, sheet_name="Dados_Excluidos")
+            if houve_exclusao:
+                df_excluidos.to_excel(writer, index=False, sheet_name="Dados_Excluidos")
 
         buffer.seek(0)
 
+        headers = {"Content-Disposition":'attachment; filename="dadosatulizacao.xlsx"'}
+
+        if houve_exclusao:
+            headers["X-Erro"] = "Dados foram excluidos. Verificar a aba Dados_Excluidos em dadosatulizacao.xlsx"
+
         return StreamingResponse(
             buffer,
-            status_code=409,
+            status_code=409 if houve_exclusao else 200,
             media_type=XLSX,
-            headers={
-                "Content-Disposition": 'attachment; filename="dados_excluidos.xlsx"',
-                "X-Erro": "Dados foram excluidos. Verificar dados_excluidos.xlsx",
-            },
+            headers=headers
         )
+
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao processar dados: {e}")
