@@ -5,7 +5,8 @@ export const TIPOS = {
   fortes_ag: 'Fortes AG',
   somaoffice_passado: 'Somaoffice Passado',
   unidades_municipios: 'Unidades e Municípios',
-  somaoffice_tempo: 'Somaoffice Tempo',
+  somaoffice_tempo: 'Somaoffice Tempo (Export)',
+  somaoffice_tempo_total: 'Somaoffice Tempo Total',
   somaoffice_totais: 'Somaoffice Totais',
 }
 
@@ -28,6 +29,7 @@ export const ENDPOINTS = [
     titulo: 'Planilha de tempo',
     campos: {
       somaoffice_tempo: 'somaoffice_tempo',
+      somaoffice_tempo_total: 'somaoffice_tempo_total',
       detalhamento_empresas: 'detalhamento',
       somaoffice_totais: 'somaoffice_totais',
     },
@@ -38,8 +40,9 @@ export const ENDPOINTS = [
 const REGRAS = [
   ['detalhamento', [/detalhamento/]],
   ['somaoffice_passado', [/passado/]],
+  ['somaoffice_tempo_total', [/tempo.*total/]],
   ['somaoffice_totais', [/totais?/]],
-  ['somaoffice_tempo', [/tempo/]],
+  ['somaoffice_tempo', [/tempo/, /^export$/]],
   ['unidades_municipios', [/unidade/, /municipio/]],
   ['nectar_crm', [/nectar/, /crm/]],
   ['fortes_ag', [/fortes/, /(^|[^a-z])ag([^a-z]|$)/]],
@@ -48,7 +51,7 @@ const REGRAS = [
 // Devolve o tipo detectado pelo nome ou '' se não reconhecer.
 export function detectarTipo(nomeArquivo) {
   const nome = nomeArquivo
-    .replace(/\.xlsx$/i, '')
+    .replace(/\.(xlsx|csv)$/i, '')
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
     .toLowerCase()

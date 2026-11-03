@@ -321,6 +321,9 @@ def update_somaoffice_tempo_totais(df_somaoffice_totais : pd.DataFrame, df_tempo
 
         df_tempo_totais = pd.concat([df_tempo_totais, df_somaoffice_totais])
 
+        # O histórico vem como datetime e as linhas novas como date; unifica para o CSV sair com um formato só.
+        df_tempo_totais['Data'] = pd.to_datetime(df_tempo_totais['Data'])
+
         return df_tempo_totais
 
     except Exception as e:
