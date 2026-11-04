@@ -13,6 +13,8 @@ Todos recebem arquivos via `multipart/form-data` e devolvem um `.zip` com um `.c
 
 Os CSVs seguem o padrão do Excel pt-BR: separador `;`, decimal `,` e UTF-8 com BOM. Datas saem como `AAAA-MM-DD`.
 
+Os exports externos também podem ser enviados como `.csv` no mesmo padrão (no Excel: "CSV UTF-8"). Para a planilha de Unidades, envie só a aba `Unidades`. Com `.xlsx` a leitura é um pouco mais lenta, mas o resultado é o mesmo.
+
 ---
 
 ### `POST /somaoffice_update`
@@ -115,7 +117,7 @@ A API sobe em `http://localhost:8000`. A documentação interativa (Swagger), on
 
 ## Frontend
 
-Em [frontend/](frontend/) há um site em React (Vite) para usar a API sem `curl`. Você solta todos os `.xlsx` e `.csv` de uma vez, o site identifica cada arquivo pelo nome (dá para corrigir o tipo num seletor) e envia para os endpoints que estiverem completos. O `Detalhamento_Empresas` é reaproveitado nos dois. Os resultados são baixados automaticamente; no caso do 409, o site avisa que os clientes foram excluídos e baixa o `dadosatulizacao.zip` com o `Dados_Excluidos.csv`.
+Em [frontend/](frontend/) há um site em React (Vite) para usar a API sem `curl`. Você solta todos os `.xlsx` e `.csv` de uma vez, o site identifica cada arquivo pelo nome (dá para corrigir o tipo num seletor) e envia para os endpoints que estiverem completos. O `Detalhamento_Empresas` é reaproveitado nos dois. Quando cada endpoint termina, aparece um botão **Realizar download** (nada é baixado sozinho); no caso do 409, o site avisa que os clientes foram excluídos e o `dadosatulizacao.zip` inclui o `Dados_Excluidos.csv`.
 
 **Rodar localmente** (em dois terminais):
 

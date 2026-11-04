@@ -333,6 +333,16 @@ body {
   cursor: not-allowed;
 }
 
+/* Botão de download dentro do card de resultado: menor e sem ocupar a largura toda. */
+.botao--download {
+  width: auto;
+  height: 36px;
+  align-self: flex-start;
+  padding: 0 16px;
+  font-size: 14px;
+  text-decoration: none;
+}
+
 .spinner {
   width: 16px;
   height: 16px;

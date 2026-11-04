@@ -113,15 +113,9 @@ def extrair_df_dados(df_base_somapay : pd.DataFrame, df_base_ag : pd.DataFrame, 
 
     df_dados = df_dados[['CNPJ', 'Funil', 'grupo_empresarial', 'nome_empresa', 'Município', 'Nome Representante', 'UF', 'Cliente Fortes?', 'Segmento']]
 
-    for cnpj in df_dados['CNPJ']:
-        if pd.isna(cnpj):
-            continue
-
-        funil = df_dados.loc[df_dados['CNPJ'] == cnpj, 'Funil'].item()
-        segmento = df_dados.loc[df_dados['CNPJ'] == cnpj, 'Segmento'].item()
-
-        if pd.isna(funil) and not pd.isna(segmento):
-            df_dados.loc[df_dados['CNPJ'] == cnpj, 'Funil'] = segmento
+    # Sem Funil, usa o Segmento.
+    sem_funil = df_dados['CNPJ'].notna() & df_dados['Funil'].isna() & df_dados['Segmento'].notna()
+    df_dados.loc[sem_funil, 'Funil'] = df_dados.loc[sem_funil, 'Segmento']
 
 
     df_dados = df_dados.drop(columns=['Segmento'])
@@ -136,53 +130,18 @@ def update_somaoffice(df_somaoffice_atual : pd.DataFrame, df_somaoffice_passado 
 
         df_somaoffice_merge_inner = pd.merge(df_somaoffice_passado, df_somaoffice_atual, how='inner', on='CNPJ')
 
-        for cnpj in df_somaoffice_merge_inner['CNPJ']:
+        # O dado atual sobrescreve o passado quando existe e é diferente.
+        colunas_atualizaveis = ['Funil', 'grupo_empresarial', 'nome_empresa', 'Município', 'Nome Representante', 'UF', 'Cliente Fortes?']
 
-            if pd.isna(cnpj):
-                continue
+        tem_cnpj = df_somaoffice_merge_inner['CNPJ'].notna()
 
-            funil_passado = df_somaoffice_merge_inner.loc[df_somaoffice_merge_inner['CNPJ'] == cnpj, 'Funil_x'].item()
-            funil_atual = df_somaoffice_merge_inner.loc[df_somaoffice_merge_inner['CNPJ'] == cnpj, 'Funil_y'].item()
+        for coluna in colunas_atualizaveis:
+            passado = df_somaoffice_merge_inner[f'{coluna}_x']
+            atual = df_somaoffice_merge_inner[f'{coluna}_y']
 
-            grupo_empresarial_passado = df_somaoffice_merge_inner.loc[df_somaoffice_merge_inner['CNPJ'] == cnpj, 'grupo_empresarial_x'].item()
-            grupo_empresarial_atual = df_somaoffice_merge_inner.loc[df_somaoffice_merge_inner['CNPJ'] == cnpj, 'grupo_empresarial_y'].item()
+            mudou = tem_cnpj & atual.notna() & (passado != atual)
 
-            nome_empresa_passado = df_somaoffice_merge_inner.loc[df_somaoffice_merge_inner['CNPJ'] == cnpj, 'nome_empresa_x'].item()
-            nome_empresa_atual = df_somaoffice_merge_inner.loc[df_somaoffice_merge_inner['CNPJ'] == cnpj, 'nome_empresa_y'].item()
-
-            municipio_passado = df_somaoffice_merge_inner.loc[df_somaoffice_merge_inner['CNPJ'] == cnpj, 'Município_x'].item()
-            municipio_atual = df_somaoffice_merge_inner.loc[df_somaoffice_merge_inner['CNPJ'] == cnpj, 'Município_y'].item()
-
-            nome_representante_passado = df_somaoffice_merge_inner.loc[df_somaoffice_merge_inner['CNPJ'] == cnpj, 'Nome Representante_x'].item()
-            nome_representante_atual = df_somaoffice_merge_inner.loc[df_somaoffice_merge_inner['CNPJ'] == cnpj, 'Nome Representante_y'].item()
-
-            uf_passado = df_somaoffice_merge_inner.loc[df_somaoffice_merge_inner['CNPJ'] == cnpj, 'UF_x'].item()
-            uf_atual = df_somaoffice_merge_inner.loc[df_somaoffice_merge_inner['CNPJ'] == cnpj, 'UF_y'].item()
-            
-            cliente_fortes_passado = df_somaoffice_merge_inner.loc[df_somaoffice_merge_inner['CNPJ'] == cnpj, 'Cliente Fortes?_x'].item()
-            cliente_fortes_atual = df_somaoffice_merge_inner.loc[df_somaoffice_merge_inner['CNPJ'] == cnpj, 'Cliente Fortes?_y'].item()
-
-
-            if (funil_passado != funil_atual) and not pd.isna(funil_atual):
-                df_somaoffice_merge_inner.loc[df_somaoffice_merge_inner['CNPJ'] == cnpj, 'Funil_x'] = funil_atual
-
-            if (grupo_empresarial_passado != grupo_empresarial_atual) and not pd.isna(grupo_empresarial_atual):
-                df_somaoffice_merge_inner.loc[df_somaoffice_merge_inner['CNPJ'] == cnpj, 'grupo_empresarial_x'] = grupo_empresarial_atual
-
-            if (nome_empresa_passado != nome_empresa_atual) and not pd.isna(nome_empresa_atual):
-                df_somaoffice_merge_inner.loc[df_somaoffice_merge_inner['CNPJ'] == cnpj, 'nome_empresa_x'] = nome_empresa_atual   
-
-            if (municipio_passado != municipio_atual) and not pd.isna(municipio_atual):
-                df_somaoffice_merge_inner.loc[df_somaoffice_merge_inner['CNPJ'] == cnpj, 'Município_x'] = municipio_atual
-
-            if (nome_representante_passado != nome_representante_atual) and not pd.isna(nome_representante_atual):
-                df_somaoffice_merge_inner.loc[df_somaoffice_merge_inner['CNPJ'] == cnpj, 'Nome Representante_x'] = nome_representante_atual   
-
-            if (uf_passado != uf_atual) and not pd.isna(uf_atual):
-                df_somaoffice_merge_inner.loc[df_somaoffice_merge_inner['CNPJ'] == cnpj, 'UF_x'] = uf_atual
-
-            if (cliente_fortes_passado != cliente_fortes_atual) and not pd.isna(cliente_fortes_atual):
-                df_somaoffice_merge_inner.loc[df_somaoffice_merge_inner['CNPJ'] == cnpj, 'Cliente Fortes?_x'] = cliente_fortes_atual 
+            df_somaoffice_merge_inner.loc[mudou, f'{coluna}_x'] = atual[mudou]
 
 
         colunas_para_ficar = []
@@ -197,9 +156,7 @@ def update_somaoffice(df_somaoffice_atual : pd.DataFrame, df_somaoffice_passado 
 
         df_somaoffice_merge_inner = df_somaoffice_merge_inner[colunas_para_ficar]
 
-        print(df_somaoffice_merge_inner.columns)
 
-        print(df_somaoffice_merge_inner.count())
 
 
 
@@ -221,9 +178,7 @@ def update_somaoffice(df_somaoffice_atual : pd.DataFrame, df_somaoffice_passado 
 
         df_somaoffice_merge_left = df_somaoffice_merge_left[colunas_para_ficar]
 
-        print(df_somaoffice_merge_left.columns)
 
-        print(df_somaoffice_merge_left.count())
 
 
         df_somaoffice_atualizado = pd.concat([df_somaoffice_merge_inner, df_somaoffice_merge_left], ignore_index=True)
@@ -234,15 +189,12 @@ def update_somaoffice(df_somaoffice_atual : pd.DataFrame, df_somaoffice_passado 
 
         df_somaoffice_atualizado = pd.merge(df_somaoffice_atualizado, df_unidades_municipios, how='left', on=['Município', 'UF'])
 
-        for cnpj in df_somaoffice_atualizado['CNPJ']:
-            if pd.isna(cnpj):
-                continue
+        # Sem representante, usa a unidade da cidade.
+        sem_representante = (df_somaoffice_atualizado['CNPJ'].notna()
+                             & df_somaoffice_atualizado['Nome Representante'].isna()
+                             & df_somaoffice_atualizado['UNIDADE'].notna())
 
-            unidade = df_somaoffice_atualizado.loc[df_somaoffice_atualizado['CNPJ'] == cnpj, 'UNIDADE'].item()
-            nome_representante = df_somaoffice_atualizado.loc[df_somaoffice_atualizado['CNPJ'] == cnpj, 'Nome Representante'].item()
-
-            if pd.isna(nome_representante) and not pd.isna(unidade):
-                df_somaoffice_atualizado.loc[df_somaoffice_atualizado['CNPJ'] == cnpj, 'Nome Representante'] = unidade
+        df_somaoffice_atualizado.loc[sem_representante, 'Nome Representante'] = df_somaoffice_atualizado.loc[sem_representante, 'UNIDADE']
 
         df_somaoffice_atualizado = df_somaoffice_atualizado.drop(columns=['UNIDADE'])
 

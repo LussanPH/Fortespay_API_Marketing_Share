@@ -37,9 +37,9 @@ CSV_DECIMAL = ","
 def ler_planilha(upload : UploadFile, sheet_name = 0, **kwargs):
     # Os arquivos gerados pela API voltam como .csv; os exports externos continuam .xlsx.
     if (upload.filename or "").lower().endswith(".csv"):
-        return pd.read_csv(upload.file, sep=CSV_SEP, decimal=CSV_DECIMAL, encoding="utf-8-sig", **kwargs)
+        return pd.read_csv(upload.file, sep=CSV_SEP, decimal=CSV_DECIMAL, encoding="utf-8-sig", low_memory=False, **kwargs)
 
-    return pd.read_excel(upload.file, sheet_name=sheet_name, **kwargs)
+    return pd.read_excel(upload.file, sheet_name=sheet_name, engine="calamine", **kwargs)
 
 
 def decimal_em_colunas_mistas(df : pd.DataFrame):

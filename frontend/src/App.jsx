@@ -8,15 +8,6 @@ import Results from './components/Results.jsx'
 
 let proximoId = 1
 
-function baixar(url, nome) {
-  const a = document.createElement('a')
-  a.href = url
-  a.download = nome
-  document.body.appendChild(a)
-  a.click()
-  a.remove()
-}
-
 export default function App() {
   const [arquivos, setArquivos] = useState([])
   const [desmarcados, setDesmarcados] = useState([]) // endpoints que o usuário desmarcou
@@ -125,7 +116,6 @@ export default function App() {
       if (r.blob) {
         url = URL.createObjectURL(r.blob)
         urlsRef.current.push(url)
-        baixar(url, r.nomeArquivo)
       }
       atualizar(i, { status: r.status, mensagem: r.mensagem, url, nomeArquivo: r.nomeArquivo })
     }
