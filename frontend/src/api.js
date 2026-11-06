@@ -43,17 +43,17 @@ export async function enviar(path, formData) {
     return {
       status: 'ok',
       blob: await resposta.blob(),
-      nomeArquivo: nomeDoArquivo(resposta, 'resultado.xlsx'),
+      nomeArquivo: nomeDoArquivo(resposta, 'resultado.zip'),
     }
   }
 
-  // 409: a API devolve a planilha atualizada, com uma aba extra listando os clientes excluídos.
+  // 409: a API devolve o zip com a planilha atualizada e um CSV extra listando os clientes excluídos.
   if (resposta.status === 409) {
     return {
       status: 'conflito',
       mensagem: resposta.headers.get('x-erro') || 'Clientes deixaram de ser rastreados.',
       blob: await resposta.blob(),
-      nomeArquivo: nomeDoArquivo(resposta, 'dadosatulizacao.xlsx'),
+      nomeArquivo: nomeDoArquivo(resposta, 'dadosatulizacao.zip'),
     }
   }
 

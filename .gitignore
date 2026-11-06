@@ -3,3 +3,5 @@
 .env
 /__pycache__
 testes.py
+/planilhas_xlsx
+/planilhas_csv

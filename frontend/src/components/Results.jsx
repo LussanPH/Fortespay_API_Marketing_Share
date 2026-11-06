@@ -18,15 +18,15 @@ export default function Results({ resultados }) {
 
           {r.status === 'conflito' && (
             <p className="resultado__msg">
-              {r.mensagem.replace(/[.\s]+$/, '')}. A planilha atualizada foi baixada. Os clientes excluídos foram
+              {r.mensagem.replace(/[.\s]+$/, '')}. A planilha atualizada está pronta para download. Os clientes excluídos foram
               mantidos sem alteração e estão listados na aba <strong>Dados_Excluidos</strong>.
             </p>
           )}
           {r.status === 'erro' && <p className="resultado__msg">{r.mensagem}</p>}
 
           {r.url && (
-            <a className="link" href={r.url} download={r.nomeArquivo}>
-              Baixar {r.nomeArquivo} de novo
+            <a className="botao botao--download" href={r.url} download={r.nomeArquivo}>
+              Realizar download ({r.nomeArquivo})
             </a>
           )}
         </li>

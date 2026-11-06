@@ -9,7 +9,11 @@ API em FastAPI que automatiza a manutenção das planilhas da Fortespay a partir
 | POST   | `/somaoffice_update` | Atualiza a base de clientes (`Somaoffice_Passado`)                      |
 | POST   | `/somaoffice_tempo`  | Atualiza a planilha de evolução no tempo (`Somaoffice_Tempo`)           |
 
-Todos recebem arquivos `.xlsx` via `multipart/form-data` e devolvem um `.xlsx`.
+Todos recebem arquivos via `multipart/form-data` e devolvem um `.zip` com um `.csv` por aba. Os exports externos (Somaoffice, Nectar, Fortes AG, Unidades) continuam `.xlsx`; os arquivos gerados pela API voltam como `.csv` na execução seguinte (a API escolhe o leitor pela extensão).
+
+Os CSVs seguem o padrão do Excel pt-BR: separador `;`, decimal `,` e UTF-8 com BOM. Datas saem como `AAAA-MM-DD`.
+
+Os exports externos também podem ser enviados como `.csv` no mesmo padrão (no Excel: "CSV UTF-8"). Para a planilha de Unidades, envie só a aba `Unidades`. Com `.xlsx` a leitura é um pouco mais lenta, mas o resultado é o mesmo.
 
 ---
 
@@ -24,7 +28,7 @@ Atualiza a planilha com todos os clientes da Fortespay. Junta cinco planilhas e 
 | `detalhamento_empresas_somaoffice`   | Exportação atual do Somaoffice (Detalhamento de Empresas)       |
 | `nectar_crm`                         | Base do CRM Nectar                                              |
 | `fortes_ag`                          | Base da Fortes AG                                               |
-| `somaoffice_passado`                 | A última versão da planilha `Somaoffice_Passado`                |
+| `somaoffice_passado`                 | A última versão da `Somaoffice_Passado` (`Somaoffice_passado.csv` do zip anterior) |
 | `unidades_municipios`                | Planilha com a aba `Unidades` (colunas `CIDADE`, `UF`, `UNIDADE`) |
 
 **O que ele faz**
@@ -33,27 +37,27 @@ Atualiza a planilha com todos os clientes da Fortespay. Junta cinco planilhas e 
 2. Cruza Somaoffice, CRM e Fortes AG pelo CNPJ para montar a base atual.
 3. Compara a base atual com a `somaoffice_passado`.
    - Atualiza os campos dos clientes existentes (funil, grupo empresarial, nome da empresa, município, representante, UF, cliente Fortes) com os valores novos que não estejam vazios, e acrescenta os clientes novos.
-   - Se algum cliente da base passada **não aparece mais** na base atual, ele é mantido na planilha com os dados que já tinha, sem alteração, e também listado na aba `Dados_Excluidos` (veja abaixo).
+   - Se algum cliente da base passada **não aparece mais** na base atual, ele é mantido na planilha com os dados que já tinha, sem alteração, e também listado em `Dados_Excluidos.csv` (veja abaixo).
 4. Quando o representante está vazio, preenche com a unidade correspondente ao município/UF.
 
 **Respostas**
 
 | Status | Quando                                  | Corpo                                                                 |
 | ------ | --------------------------------------- | --------------------------------------------------------------------- |
-| 200    | Atualização concluída                   | `dadosatulizacao.xlsx`, aba `Somaoffice_passado`                      |
-| 409    | Clientes deixaram de ser rastreados     | `dadosatulizacao.xlsx` com duas abas: `Somaoffice_passado` (já atualizada, incluindo os excluídos) e `Dados_Excluidos` (só os clientes removidos). A mensagem também vai no header `X-Erro` |
+| 200    | Atualização concluída                   | `dadosatulizacao.zip` com `Somaoffice_passado.csv`                    |
+| 409    | Clientes deixaram de ser rastreados     | `dadosatulizacao.zip` com dois arquivos: `Somaoffice_passado.csv` (já atualizada, incluindo os excluídos) e `Dados_Excluidos.csv` (só os clientes removidos). A mensagem também vai no header `X-Erro` |
 | 500    | Qualquer outro erro de processamento    | JSON com `detail`                                                     |
 
-> **Atenção:** o 409 devolve um arquivo, não um JSON. Quem chama a API precisa salvar o corpo da resposta mesmo com status de erro (por exemplo, não usar `raise_for_status()` antes de gravar o arquivo). Esse arquivo pode ser usado como nova `Somaoffice_Passado`, porque a aba `Somaoffice_passado` é a primeira. Como os excluídos continuam nela, eles voltam a ser apontados (e o status volta a ser 409) em toda execução até serem removidos manualmente.
+> **Atenção:** o 409 devolve um arquivo, não um JSON. Quem chama a API precisa salvar o corpo da resposta mesmo com status de erro (por exemplo, não usar `raise_for_status()` antes de gravar o arquivo). O `Somaoffice_passado.csv` do zip pode ser usado como nova `Somaoffice_Passado`. Como os excluídos continuam nela, eles voltam a ser apontados (e o status volta a ser 409) em toda execução até serem removidos manualmente.
 
 **Exemplo**
 
 ```bash
-curl -D - -o resultado.xlsx -X POST http://localhost:8000/somaoffice_update \
+curl -D - -o resultado.zip -X POST http://localhost:8000/somaoffice_update \
   -F detalhamento_empresas_somaoffice=@Detalhamento_Empresas.xlsx \
   -F nectar_crm=@nectar_crm.xlsx \
   -F fortes_ag=@fortes_ag.xlsx \
-  -F somaoffice_passado=@Somaoffice_Passado.xlsx \
+  -F somaoffice_passado=@Somaoffice_passado.csv \
   -F unidades_municipios=@Unidades_Municipios.xlsx
 ```
 
@@ -67,7 +71,8 @@ Atualiza diariamente a planilha de evolução no tempo com os dados mais recente
 
 | Campo                    | Conteúdo                                                                                      |
 | ------------------------ | --------------------------------------------------------------------------------------------- |
-| `somaoffice_tempo`       | Planilha de tempo atual, com as abas `Export` e `Somaoffice_Tempo_Total`                      |
+| `somaoffice_tempo`       | `Export.csv` do zip anterior (a aba `Export` da planilha de tempo)                            |
+| `somaoffice_tempo_total` | `Somaoffice_Tempo_Total.csv` do zip anterior (coluna `Data` em `AAAA-MM-DD`)                  |
 | `detalhamento_empresas`  | Exportação atual do Somaoffice (Detalhamento de Empresas)                                     |
 | `somaoffice_totais`      | Exportação com os totais mensais (coluna `Date - Mês`, com o nome do mês)                     |
 
@@ -82,16 +87,17 @@ Atualiza diariamente a planilha de evolução no tempo com os dados mais recente
 
 | Status | Quando                  | Corpo                                  |
 | ------ | ----------------------- | -------------------------------------- |
-| 200    | Atualização concluída   | `somaoffice_tempo.xlsx` com 4 abas     |
+| 200    | Atualização concluída   | `somaoffice_tempo.zip` com 4 CSVs      |
 | 500    | Erro de processamento   | JSON com `detail`                      |
 
-Abas do arquivo retornado: `Export`, `Somaoffice_Tempo_Empresas`, `Somaoffice_Tempo_Grupos` e `Somaoffice_Tempo_Total`.
+Arquivos do zip retornado: `Export.csv`, `Somaoffice_Tempo_Empresas.csv`, `Somaoffice_Tempo_Grupos.csv` e `Somaoffice_Tempo_Total.csv`. Só o `Export.csv` e o `Somaoffice_Tempo_Total.csv` são reenviados na próxima execução.
 
 **Exemplo**
 
 ```bash
-curl -o somaoffice_tempo.xlsx -X POST http://localhost:8000/somaoffice_tempo \
-  -F somaoffice_tempo=@Somaoffice_Tempo.xlsx \
+curl -o somaoffice_tempo.zip -X POST http://localhost:8000/somaoffice_tempo \
+  -F somaoffice_tempo=@Export.csv \
+  -F somaoffice_tempo_total=@Somaoffice_Tempo_Total.csv \
   -F detalhamento_empresas=@Detalhamento_Empresas.xlsx \
   -F somaoffice_totais=@Somaoffice_Totais.xlsx
 ```
@@ -111,7 +117,7 @@ A API sobe em `http://localhost:8000`. A documentação interativa (Swagger), on
 
 ## Frontend
 
-Em [frontend/](frontend/) há um site em React (Vite) para usar a API sem `curl`. Você solta todos os `.xlsx` de uma vez, o site identifica cada arquivo pelo nome (dá para corrigir o tipo num seletor) e envia para os endpoints que estiverem completos. O `Detalhamento_Empresas` é reaproveitado nos dois. Os resultados são baixados automaticamente; no caso do 409, o site avisa que os clientes foram excluídos e baixa o `dadosatulizacao.xlsx` com a aba `Dados_Excluidos`.
+Em [frontend/](frontend/) há um site em React (Vite) para usar a API sem `curl`. Você solta todos os `.xlsx` e `.csv` de uma vez, o site identifica cada arquivo pelo nome (dá para corrigir o tipo num seletor) e envia para os endpoints que estiverem completos. O `Detalhamento_Empresas` é reaproveitado nos dois. Quando cada endpoint termina, aparece um botão **Realizar download** (nada é baixado sozinho); no caso do 409, o site avisa que os clientes foram excluídos e o `dadosatulizacao.zip` inclui o `Dados_Excluidos.csv`.
 
 **Rodar localmente** (em dois terminais):
 
@@ -140,7 +146,7 @@ Sem `CORS_ORIGINS`, a API só aceita chamadas de `http://localhost:5173`.
 
 | Arquivo           | Conteúdo                                                                     |
 | ----------------- | ---------------------------------------------------------------------------- |
-| `main_fastapi.py` | Definição dos endpoints, CORS, leitura dos uploads e geração dos `.xlsx` de resposta |
+| `main_fastapi.py` | Definição dos endpoints, CORS, leitura dos uploads e geração do `.zip` de CSVs de resposta |
 | `functions.py`    | Regras de negócio: limpeza, cruzamento das bases, atualização e detecção dos clientes excluídos |
 | `frontend/`       | Site em React (Vite) para enviar as planilhas                                |
 | `pyproject.toml`  | Dependências e versão do Python                                              |

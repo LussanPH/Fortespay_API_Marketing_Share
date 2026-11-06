@@ -8,15 +8,6 @@ import Results from './components/Results.jsx'
 
 let proximoId = 1
 
-function baixar(url, nome) {
-  const a = document.createElement('a')
-  a.href = url
-  a.download = nome
-  document.body.appendChild(a)
-  a.click()
-  a.remove()
-}
-
 export default function App() {
   const [arquivos, setArquivos] = useState([])
   const [desmarcados, setDesmarcados] = useState([]) // endpoints que o usuário desmarcou
@@ -61,16 +52,16 @@ export default function App() {
   const selecionados = estados.filter((e) => e.completo && !desmarcados.includes(e.ep.path))
 
   function adicionarArquivos(lista) {
-    const xlsx = lista.filter((f) => /\.xlsx$/i.test(f.name))
-    const rejeitados = lista.length - xlsx.length
+    const aceitos = lista.filter((f) => /\.(xlsx|csv)$/i.test(f.name))
+    const rejeitados = lista.length - aceitos.length
 
     setArquivos((atuais) => {
-      const novos = xlsx
+      const novos = aceitos
         .filter((f) => !atuais.some((a) => a.file.name === f.name && a.file.size === f.size && a.file.lastModified === f.lastModified))
         .map((file) => ({ id: proximoId++, file, tipo: detectarTipo(file.name) }))
       return [...atuais, ...novos]
     })
-    setAviso(rejeitados > 0 ? `${rejeitados} arquivo(s) ignorado(s): só são aceitos arquivos .xlsx.` : '')
+    setAviso(rejeitados > 0 ? `${rejeitados} arquivo(s) ignorado(s): só são aceitos arquivos .xlsx e .csv.` : '')
   }
 
   function alterarTipo(id, tipo) {
@@ -125,7 +116,6 @@ export default function App() {
       if (r.blob) {
         url = URL.createObjectURL(r.blob)
         urlsRef.current.push(url)
-        baixar(url, r.nomeArquivo)
       }
       atualizar(i, { status: r.status, mensagem: r.mensagem, url, nomeArquivo: r.nomeArquivo })
     }
