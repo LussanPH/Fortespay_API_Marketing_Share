@@ -266,6 +266,9 @@ def update_somaoffice_tempo_totais(df_somaoffice_totais : pd.DataFrame, df_tempo
 
         df_somaoffice_totais = df_somaoffice_totais.drop(columns=['Date - Mês'])
 
+        # No CSV, "Data" pode misturar "2024-01-01 00:00:00" e "2026-01-01"; o parse_dates desiste e deixa a coluna como texto. ISO8601 aceita os dois formatos.
+        df_tempo_totais["Data"] = pd.to_datetime(df_tempo_totais["Data"], format="ISO8601")
+
         ano_existe = (df_tempo_totais["Data"].dt.year == ano).any()
 
         if ano_existe:
